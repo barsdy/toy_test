@@ -1,0 +1,46 @@
+#!/bin/sh
+# This is used to replace all head files
+
+headlist_file=./header_list
+modification_record=./modification_record
+
+# analyze the head list file
+while read line
+do
+    head_name=$(echo $line|awk -F/ '{print $NF}')
+    #echo -e "\nFinding and replacing $head_name now...\n" >> $modification_record;
+    for each_file in `find . -name "*.[ch]"`
+    do
+        line_no=$(sed -n "/${head_name}/=");
+        if [ -z "$line_no" ]; then
+            continue;
+        fi;
+        echo "find $line_no";
+
+        matched_line=$(sed -n "${line_no}p" $each_file);
+        if [[ "$matched_line" !=~ "^#include " ]]; then
+            #comment out
+            continue;
+        fi;
+        echo "find $matched_line";
+        
+        line_no=$(sed -n '1,100p' $each_file | sed -n '/^#include/'p | sed -n "/${head_name}/=");
+        if [ -z "$line_no" ]; then
+            line_no="";
+            continue;
+        fi;
+
+        if [ "$line_no"x = ""x ]; then
+            #empty line
+            continue;
+        fi;
+
+        echo "$each_file headname: $head_name line: $line_no";
+        matched_line=$(sed -n "${line_no}p" $each_file);
+        echo "$matched_line";
+        #echo -e "\tModify $each_file at line${line_no}:\n\t\t${matched_line}" >> $modification_record;
+        #sed -i "${line_no}d" $each_file;
+        #sed -i ${line_no}i"#include \"$line\"" $each_file;
+    done;
+done < $headlist_file;
+
